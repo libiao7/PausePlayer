@@ -1,5 +1,6 @@
 package com.example.pauseplayer
 
+import android.annotation.SuppressLint
 import android.content.Intent
 import android.content.pm.ActivityInfo
 import android.net.Uri
@@ -13,7 +14,9 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.common.VideoSize
 import androidx.media3.datasource.DefaultHttpDataSource
+import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.SeekParameters
 import androidx.media3.exoplayer.source.ProgressiveMediaSource
 import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.PlayerView
@@ -41,7 +44,21 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun initPlayer() {
-        player = ExoPlayer.Builder(this).build()
+        val loadControl = DefaultLoadControl.Builder()
+            .setBufferDurationsMs(
+                128000, // minBufferMs: 至少缓冲多少
+                256000, // maxBufferMs: 最多缓冲多少
+                1500,  // bufferForPlaybackMs: 起播缓冲
+                2000,  // bufferForPlaybackAfterRebufferMs: 卡顿后重新起播缓冲
+            )
+            .setBackBuffer(128000, true) // 核心代码：保留过去 多少毫秒的数据在内存中，不立即丢弃
+            .build()
+
+// 使用这个 loadControl 初始化 player
+        player = ExoPlayer.Builder(this)
+            .setLoadControl(loadControl)
+            .build()
+//        player = ExoPlayer.Builder(this).build()
         playerView.player = player
 
         // 自动旋转逻辑：根据视频宽高比决定横竖屏
@@ -83,7 +100,7 @@ class MainActivity : AppCompatActivity() {
         player.prepare()
         player.play()
     }
-
+    @SuppressLint("ClickableViewAccessibility") // 加在方法或者类上方
     private fun setupTouchLogic() {
         playerView.setOnTouchListener { _, event ->
             when (event.action) {
@@ -104,6 +121,8 @@ class MainActivity : AppCompatActivity() {
                     if (absDx > 10 && absDx > absDy) {
                         // 横向滑动：快进/快退 (基于你的 JS 公式)
                         val moveMs = (dx * dx / 625).toLong() * sign(dx).toLong() * 1000
+                        val seekSync=if (moveMs<0&&moveMs>-5000){SeekParameters.EXACT}else if (moveMs<0){SeekParameters.PREVIOUS_SYNC}else if (moveMs>0){SeekParameters.NEXT_SYNC}else{SeekParameters.CLOSEST_SYNC}
+                        player.setSeekParameters(seekSync)
                         player.seekTo(player.currentPosition + moveMs)
                         player.play()
                     } else if (absDy > 10 && absDy > absDx) {
