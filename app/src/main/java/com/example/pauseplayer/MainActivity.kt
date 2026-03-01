@@ -79,22 +79,44 @@ class MainActivity : AppCompatActivity() {
         val data: Uri? = intent?.data
         if (data != null && data.scheme == "pauseplayer") {
             val segments = data.pathSegments
-            if (segments.size >= 2) {
-                // Base64 解码 (对应你的方案 B)
-                val url = String(Base64.decode(segments[0], Base64.DEFAULT))
-                val ua = String(Base64.decode(segments[1], Base64.DEFAULT))
-                startPlay(url, ua)
-            }
+
+            // 提取加密后的 URL (必选)
+            val encodedUrl = segments.getOrNull(0) ?: return
+            val url = String(Base64.decode(encodedUrl, Base64.DEFAULT))
+
+            // 提取加密后的 UA (可选)
+            val ua = segments.getOrNull(1)?.let {
+                String(Base64.decode(it, Base64.DEFAULT))
+            } ?: "DefaultUserAgent/1.0" // 默认 UA
+
+            startPlay(url, ua)
         }
     }
 
     private fun startPlay(url: String, ua: String) {
+        val uri = Uri.parse(url)
         val dataSourceFactory = DefaultHttpDataSource.Factory()
             .setUserAgent(ua)
             .setAllowCrossProtocolRedirects(true)
 
+        // 检查 URL 中是否包含 user:password@ 格式
+        val userInfo = uri.userInfo
+        if (!userInfo.isNullOrEmpty()) {
+            // 构建 Basic Auth 响应头
+            // 注意：Base64.NO_WRAP 是必须的，防止生成换行符导致 Header 报错
+            val authHeader =
+                "Basic " + Base64.encodeToString(userInfo.toByteArray(), Base64.NO_WRAP)
+
+            dataSourceFactory.setDefaultRequestProperties(
+                mapOf(
+                    "Authorization" to authHeader
+                )
+            )
+        }
+
+        // 创建媒体源
         val mediaSource = ProgressiveMediaSource.Factory(dataSourceFactory)
-            .createMediaSource(MediaItem.fromUri(url))
+            .createMediaSource(MediaItem.fromUri(uri))
 
         player.setMediaSource(mediaSource)
         player.prepare()
