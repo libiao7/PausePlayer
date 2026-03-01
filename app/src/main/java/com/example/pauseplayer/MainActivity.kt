@@ -10,6 +10,7 @@ import android.view.MotionEvent
 import android.view.WindowInsets
 import android.view.WindowInsetsController
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.net.toUri
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.common.VideoSize
@@ -94,7 +95,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun startPlay(url: String, ua: String) {
-        val uri = Uri.parse(url)
+        val uri = url.toUri()
         val dataSourceFactory = DefaultHttpDataSource.Factory()
             .setUserAgent(ua)
             .setAllowCrossProtocolRedirects(true)
