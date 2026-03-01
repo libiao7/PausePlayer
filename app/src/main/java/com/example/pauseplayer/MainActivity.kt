@@ -120,16 +120,19 @@ class MainActivity : AppCompatActivity() {
 
                     if (absDx > 10 && absDx > absDy) {
                         // 横向滑动：快进/快退 (基于你的 JS 公式)
-                        val moveMs = (dx * dx / 625).toLong() * sign(dx).toLong() * 1000
+                        val moveMs = (dx * dx).toLong() * sign(dx).toLong()
                         val seekSync=if (moveMs<0&&moveMs>-5000){SeekParameters.EXACT}else if (moveMs<0){SeekParameters.PREVIOUS_SYNC}else if (moveMs>0){SeekParameters.NEXT_SYNC}else{SeekParameters.CLOSEST_SYNC}
                         player.setSeekParameters(seekSync)
                         player.seekTo(player.currentPosition + moveMs)
                         player.play()
                     } else if (absDy > 10 && absDy > absDx) {
-                        if (dy > 0) { // 向下滑：倍速还原 + 显示控制栏（保持暂停）
-                            player.setPlaybackSpeed(1.0f)
+                        if(dy>80){
                             playerView.useController = true
                             playerView.showController()
+                        }
+                        else if (dy > 0) { // 向下滑：倍速还原 + 显示控制栏（保持暂停）
+                            player.setPlaybackSpeed(1.0f)
+                            player.play()
                         }
                         else if (dy < -80) { // 大幅向上滑：切换ZOOM/FIT
                             playerView.resizeMode = if (playerView.resizeMode == AspectRatioFrameLayout.RESIZE_MODE_ZOOM) {
@@ -160,7 +163,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun applyFullScreen() {
         // 针对 Android 16 的沉浸式处理，隐藏三大按键导航栏
-        window.setDecorFitsSystemWindows(false)
+//        window.setDecorFitsSystemWindows(false)
         val controller = window.insetsController
         if (controller != null) {
             controller.hide(WindowInsets.Type.statusBars() or WindowInsets.Type.navigationBars())
