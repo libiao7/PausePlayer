@@ -100,6 +100,7 @@ class MainActivity : AppCompatActivity() {
         player.prepare()
         player.play()
     }
+
     @SuppressLint("ClickableViewAccessibility") // 加在方法或者类上方
     private fun setupTouchLogic() {
         playerView.setOnTouchListener { _, event ->
@@ -111,40 +112,47 @@ class MainActivity : AppCompatActivity() {
                     player.pause() // 【核心】触碰即暂停
                     true
                 }
+
                 MotionEvent.ACTION_UP -> {
-                    val density=resources.displayMetrics.density
-                    val dx = (event.x - startX)/density
-                    val dy = (event.y - startY)/density
+                    val density = resources.displayMetrics.density
+                    val dx = (event.x - startX) / density
+                    val dy = (event.y - startY) / density
                     val absDx = abs(dx)
                     val absDy = abs(dy)
 
                     if (absDx > 10 && absDx > absDy) {
                         // 横向滑动：快进/快退 (基于你的 JS 公式)
                         val moveMs = (dx * dx).toLong() * sign(dx).toLong()
-                        val seekSync=if (moveMs<0&&moveMs>-5000){SeekParameters.EXACT}else if (moveMs<0){SeekParameters.PREVIOUS_SYNC}else if (moveMs>0){SeekParameters.NEXT_SYNC}else{SeekParameters.CLOSEST_SYNC}
+                        val seekSync = if (moveMs < 0 && moveMs > -5000) {
+                            SeekParameters.EXACT
+                        } else if (moveMs < 0) {
+                            SeekParameters.PREVIOUS_SYNC
+                        } else if (moveMs > 0) {
+                            SeekParameters.NEXT_SYNC
+                        } else {
+                            SeekParameters.CLOSEST_SYNC
+                        }
                         player.setSeekParameters(seekSync)
                         player.seekTo(player.currentPosition + moveMs)
                         player.play()
                     } else if (absDy > 10 && absDy > absDx) {
-                        if(dy>80){
+                        if (dy > 80) {
                             playerView.useController = true
                             playerView.showController()
-                        }
-                        else if (dy > 0) { // 向下滑：倍速还原 + 显示控制栏（保持暂停）
+                        } else if (dy > 0) { // 向下滑：倍速还原 + 显示控制栏（保持暂停）
                             player.setPlaybackSpeed(1.0f)
                             player.play()
-                        }
-                        else if (dy < -80) { // 大幅向上滑：切换ZOOM/FIT
-                            playerView.resizeMode = if (playerView.resizeMode == AspectRatioFrameLayout.RESIZE_MODE_ZOOM) {
-                                AspectRatioFrameLayout.RESIZE_MODE_FIT
-                            } else {
-                                AspectRatioFrameLayout.RESIZE_MODE_ZOOM
-                            }
+                        } else if (dy < -80) { // 大幅向上滑：切换ZOOM/FIT
+                            playerView.resizeMode =
+                                if (playerView.resizeMode == AspectRatioFrameLayout.RESIZE_MODE_ZOOM) {
+                                    AspectRatioFrameLayout.RESIZE_MODE_FIT
+                                } else {
+                                    AspectRatioFrameLayout.RESIZE_MODE_ZOOM
+                                }
 //                            playerView.setResizeMode(AspectRatioFrameLayout.RESIZE_MODE_ZOOM)
                             player.play()
                             playerView.useController = false
-                        }
-                        else { // 向上滑：2倍速播放
+                        } else { // 向上滑：2倍速播放
                             player.setPlaybackSpeed(2.0f)
                             player.play()
                             playerView.useController = false
@@ -156,6 +164,7 @@ class MainActivity : AppCompatActivity() {
                     }
                     true
                 }
+
                 else -> false
             }
         }
@@ -167,7 +176,8 @@ class MainActivity : AppCompatActivity() {
         val controller = window.insetsController
         if (controller != null) {
             controller.hide(WindowInsets.Type.statusBars() or WindowInsets.Type.navigationBars())
-            controller.systemBarsBehavior = WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+            controller.systemBarsBehavior =
+                WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
         }
     }
 
